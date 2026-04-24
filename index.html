@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="TaskFlow — Seguimiento de tareas por fases con cronómetro y alarmas configurables">
+  <title>TaskFlow — Seguimiento de Tareas</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50' y='65' text-anchor='middle' fill='white' font-size='50' font-family='sans-serif'>TF</text></svg>">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-brand">
+      <div class="header-logo">TF</div>
+      <h1 class="header-title">TaskFlow</h1>
+    </div>
+    <div class="header-center">
+      <div class="header-clock" id="header-clock">00:00:00</div>
+      <div class="header-status" id="header-status" title="Estado de conexión">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-label">Conectando...</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-ghost" id="btn-settings" title="Configuración">⚙️</button>
+      <button class="btn btn-primary" id="btn-new-task">
+        <span>＋</span> Nueva Tarea
+      </button>
+    </div>
+  </header>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat-card stat-total">
+      <div class="stat-label">Total Activas</div>
+      <div class="stat-value" id="stat-total">0</div>
+    </div>
+    <div class="stat-card stat-progress">
+      <div class="stat-label">En Proceso</div>
+      <div class="stat-value" id="stat-in-progress">0</div>
+    </div>
+    <div class="stat-card stat-paused">
+      <div class="stat-label">En Pausa</div>
+      <div class="stat-value" id="stat-paused">0</div>
+    </div>
+    <div class="stat-card stat-completed">
+      <div class="stat-label">Finalizadas Hoy</div>
+      <div class="stat-value" id="stat-completed">0</div>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="search-input" placeholder="Buscar tarea o responsable...">
+    </div>
+    <select class="filter-select" id="filter-assignee">
+      <option value="all">Todos los responsables</option>
+    </select>
+  </div>
+
+  <!-- KANBAN BOARD -->
+  <div class="kanban-board">
+    <!-- En Proceso -->
+    <div class="kanban-column col-progress">
+      <div class="column-header">
+        <div class="column-title">
+          <span class="column-dot"></span>
+          En Proceso
+        </div>
+        <span class="column-count">0</span>
+      </div>
+      <div class="column-body" id="col-in-progress"></div>
+    </div>
+
+    <!-- En Pausa -->
+    <div class="kanban-column col-paused">
+      <div class="column-header">
+        <div class="column-title">
+          <span class="column-dot"></span>
+          En Pausa
+        </div>
+        <span class="column-count">0</span>
+      </div>
+      <div class="column-body" id="col-paused"></div>
+    </div>
+
+    <!-- Finalizada -->
+    <div class="kanban-column col-completed">
+      <div class="column-header">
+        <div class="column-title">
+          <span class="column-dot"></span>
+          Finalizada
+        </div>
+        <span class="column-count">0</span>
+      </div>
+      <div class="column-body" id="col-completed"></div>
+    </div>
+  </div>
+
+  <!-- DETAIL PANEL -->
+  <aside class="detail-panel" id="detail-panel">
+    <div class="detail-panel-header">
+      <span id="detail-title">Tarea</span>
+      <button class="detail-close-btn" id="detail-close">✕</button>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Descripción</div>
+      <p id="detail-description" style="font-size:14px;color:var(--text-secondary);line-height:1.5;">—</p>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Información</div>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label>Estado</label>
+          <span id="detail-phase" class="detail-phase-badge">—</span>
+        </div>
+        <div class="detail-item">
+          <label>Prioridad</label>
+          <span id="detail-priority">—</span>
+        </div>
+        <div class="detail-item">
+          <label>Asignado a</label>
+          <span id="detail-assignee">—</span>
+        </div>
+        <div class="detail-item">
+          <label>INC</label>
+          <span id="detail-inc" style="font-family:'JetBrains Mono',monospace;color:var(--red);">—</span>
+        </div>
+        <div class="detail-item">
+          <label>CRQ</label>
+          <span id="detail-crq" style="font-family:'JetBrains Mono',monospace;color:var(--blue);">—</span>
+        </div>
+        <div class="detail-item">
+          <label>Alarma</label>
+          <span id="detail-alarm-status">—</span>
+        </div>
+        <div class="detail-item">
+          <label>Creada</label>
+          <span id="detail-created">—</span>
+        </div>
+        <div class="detail-item">
+          <label>Iniciada</label>
+          <span id="detail-started">—</span>
+        </div>
+        <div class="detail-item">
+          <label>Finalizada</label>
+          <span id="detail-completed">—</span>
+        </div>
+        <div class="detail-item">
+          <label>Tiempo Total</label>
+          <span id="detail-elapsed" style="font-family:'JetBrains Mono',monospace;color:var(--blue);">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Historial</div>
+      <div id="detail-history"></div>
+    </div>
+
+    <div id="detail-actions"></div>
+  </aside>
+
+  <!-- TASK MODAL -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="task-modal">
+      <h2 class="modal-title" id="modal-title">Nueva Tarea</h2>
+      <form id="task-form">
+        <div class="form-row">
+          <div class="form-group" style="flex:2">
+            <label for="input-title">Título *</label>
+            <input type="text" id="input-title" placeholder="Nombre de la tarea" required>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label for="input-inc">INC</label>
+            <input type="text" id="input-inc" placeholder="Ej: 00123">
+          </div>
+          <div class="form-group" style="flex:1">
+            <label for="input-crq">CRQ</label>
+            <input type="text" id="input-crq" placeholder="Ej: 78900">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="input-description">Descripción</label>
+          <textarea id="input-description" placeholder="Descripción detallada (opcional)"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="input-assignee">Asignado a</label>
+            <input type="text" id="input-assignee" placeholder="Nombre del responsable">
+          </div>
+          <div class="form-group">
+            <label for="input-priority">Prioridad</label>
+            <select id="input-priority">
+              <option value="high">🔴 Alta</option>
+              <option value="medium" selected>🟡 Media</option>
+              <option value="low">🟢 Baja</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="input-alarm-interval">Alarma (minutos)</label>
+            <select id="input-alarm-interval">
+              <option value="15">Cada 15 min</option>
+              <option value="30">Cada 30 min</option>
+              <option value="60" selected>Cada 1 hora</option>
+              <option value="120">Cada 2 horas</option>
+              <option value="240">Cada 4 horas</option>
+              <option value="480">Cada 8 horas</option>
+            </select>
+          </div>
+          <div class="form-group" style="display:flex;align-items:flex-end;">
+            <div class="checkbox-group">
+              <input type="checkbox" id="input-alarm-enabled" checked>
+              <label for="input-alarm-enabled">Activar alarma</label>
+            </div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" onclick="UI.closeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div class="modal" id="settings-modal" style="display:none;">
+      <h2 class="modal-title">⚙️ Configuración</h2>
+      <div class="form-group">
+        <label for="settings-default-alarm">Alarma predeterminada (minutos)</label>
+        <select id="settings-default-alarm">
+          <option value="15">15 min</option>
+          <option value="30">30 min</option>
+          <option value="60" selected>1 hora</option>
+          <option value="120">2 horas</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="checkbox-group">
+          <input type="checkbox" id="settings-sound" checked>
+          <label for="settings-sound">Sonido de alarma</label>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" onclick="UI.closeModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="UI.saveSettings()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container"></div>
+
+  <!-- Firebase Config -->
+  <script>
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyBYPcIT_BDJtz6RU5fsO8qkpIB0eD1Jz64",
+      authDomain: "entrega-turnos-59960.firebaseapp.com",
+      databaseURL: "https://entrega-turnos-59960-default-rtdb.firebaseio.com",
+      projectId: "entrega-turnos-59960",
+      storageBucket: "entrega-turnos-59960.firebasestorage.app",
+      messagingSenderId: "145292534059",
+      appId: "1:145292534059:web:eb36147796524a8db1e56e"
+    };
+
+    let firebaseApp, firebaseDB, firebaseTasksRef;
+    let firebaseConnected = false;
+
+    try {
+      firebaseApp = firebase.initializeApp(FIREBASE_CONFIG);
+      firebaseDB = firebase.database();
+      firebaseTasksRef = firebaseDB.ref('taskflow_tasks');
+      firebaseConnected = true;
+    } catch(e) {
+      console.warn('⚠️ Firebase init error:', e);
+      firebaseConnected = false;
+    }
+  </script>
+
+  <!-- App Scripts -->
+  <script src="js/store.js"></script>
+  <script src="js/timer.js"></script>
+  <script src="js/alarms.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
