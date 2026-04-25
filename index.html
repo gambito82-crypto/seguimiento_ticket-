@@ -10,6 +10,8 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -27,6 +29,26 @@
       </div>
     </div>
     <div class="header-actions">
+      <div class="pdf-dropdown" id="pdf-dropdown">
+        <button class="btn btn-pdf" id="btn-pdf" title="Descargar Reporte PDF">
+          📄 PDF
+        </button>
+        <div class="pdf-dropdown-menu" id="pdf-dropdown-menu">
+          <div class="pdf-dropdown-title">Exportar Reporte</div>
+          <button class="pdf-option" onclick="PDFReport.generate({filter:'all'})">
+            <span>📋</span> Todas las tareas
+          </button>
+          <button class="pdf-option" onclick="PDFReport.generate({filter:'in_progress'})">
+            <span>🔵</span> Solo En Proceso
+          </button>
+          <button class="pdf-option" onclick="PDFReport.generate({filter:'paused'})">
+            <span>🟡</span> Solo En Pausa
+          </button>
+          <button class="pdf-option" onclick="PDFReport.generate({filter:'completed'})">
+            <span>🟢</span> Solo Finalizadas
+          </button>
+        </div>
+      </div>
       <button class="btn btn-ghost" id="btn-settings" title="Configuración">⚙️</button>
       <button class="btn btn-primary" id="btn-new-task">
         <span>＋</span> Nueva Tarea
@@ -283,6 +305,7 @@
   <script src="js/timer.js"></script>
   <script src="js/alarms.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/pdf-report.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

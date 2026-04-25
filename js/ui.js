@@ -64,6 +64,24 @@ const UI = {
 
     // Settings button
     document.getElementById('btn-settings')?.addEventListener('click', () => this.openSettingsModal());
+
+    // PDF dropdown toggle
+    document.getElementById('btn-pdf')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('pdf-dropdown')?.classList.toggle('open');
+    });
+    // Close PDF dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#pdf-dropdown')) {
+        document.getElementById('pdf-dropdown')?.classList.remove('open');
+      }
+    });
+    // Close PDF dropdown when option clicked
+    document.querySelectorAll('.pdf-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        document.getElementById('pdf-dropdown')?.classList.remove('open');
+      });
+    });
   },
 
   // ============================================================
